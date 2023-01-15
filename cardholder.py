@@ -21,7 +21,6 @@ def random_num_generator(max_length: int) -> int:
     Returns:
         int: Random generated number based on specified max length
     """
-    
     temp_num = string.digits
     
     if len(temp_num) < max_length:

@@ -1,4 +1,5 @@
 import sqlite3
+from typing import Union
 from cardholder import Cardholder, random_num_generator
 
 class sqlite_db:
@@ -33,32 +34,46 @@ class sqlite_db:
 
 
 
+def input_validation(type: str, msg: str) -> Union[str, float, int]:
+    """ User input validation
 
-# first & last name must be string 
-# balance must be int or float 
+    Args:
+        type (str): string or number
+        msg (str): user input message
+
+    Returns:
+        Union[str, float, int]: return user input in string or float or integer
+    """
+    while True:
+        user_input = input(msg)
+        if not ' ' in user_input:
+            if len(user_input) > 0:  
+                if type == "string":
+                    if user_input.isalpha():
+                        return str(user_input)
+                    else:
+                        print(f"{'*'*10} Only alphabets are allowed {'*'*10}")
+                elif type == "number":
+                    if user_input.isdigit():
+                        if "." in user_input:
+                            return float(user_input)
+                        else:
+                            return int(user_input)
+                    else:
+                        print(f"{'*'*10} Only numbers are allowed {'*'*10}") 
+            else:
+                print(f"{'*'*10} Field cannot be blank {'*'*10}")
+        else:
+            print(f"{'*'*10} Whitespace is not allowed {'*'*10}")
 
 
-def input_validation(type, msg):
-    input_1 = input(f"{msg}\n") # input default string
-    print(input_1)
-    
-    if type == "name":
-        return input_1
-    else:
-        return float(input_1)
-
-
-
-
-
-
-  
-    
 
 if __name__ == "__main__":
+    a = input_validation("string", "Enter your first name:\n")
+    print(a)
     
-    
-    input_validation("name", "enter your f name")
+    b = input_validation("number", "Enter your balance:\n")
+    print(b)
     
     # db = sqlite_db()
     
