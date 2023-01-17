@@ -13,6 +13,10 @@ class sqlite_db:
         
     
         
+
+
+
+
         
 # create cardholder
 # 1. enter first, last, balance
@@ -34,8 +38,10 @@ class sqlite_db:
 
 
 
+
+# Function to validate user input
 def input_validation(type: str, msg: str) -> Union[str, float, int]:
-    """ User input validation
+    """ Validate user input
 
     Args:
         type (str): string or number
@@ -46,19 +52,22 @@ def input_validation(type: str, msg: str) -> Union[str, float, int]:
     """
     while True:
         user_input = input(msg)
-        if not ' ' in user_input:
-            if len(user_input) > 0:  
+        if not ' ' in user_input: # if user input don't have whitespace
+            if len(user_input) > 0: # if user input not empty/blank
                 if type == "string":
-                    if user_input.isalpha():
+                    if user_input.isalpha(): # if user input are all alphabet letters
                         return str(user_input)
                     else:
                         print(f"{'*'*10} Only alphabets are allowed {'*'*10}")
                 elif type == "number":
-                    if user_input.isdigit():
-                        if "." in user_input:
+                    if user_input.isdigit(): # if user input is digit
+                        return int(user_input)
+                    elif "." in user_input: # if user input contains decimal point
+                        try:
+                            float(user_input)
                             return float(user_input)
-                        else:
-                            return int(user_input)
+                        except Exception as e:
+                            print(e)
                     else:
                         print(f"{'*'*10} Only numbers are allowed {'*'*10}") 
             else:
@@ -68,12 +77,42 @@ def input_validation(type: str, msg: str) -> Union[str, float, int]:
 
 
 
+def create_cardholder_save_db():
+    firstName = input_validation("string", "Enter your first name:\n")
+    lastName = input_validation("string", "Enter your last name:\n")
+    balance = input_validation("number", "Enter your balance:\n")
+
+    print(firstName)
+    print(lastName)
+    print(balance)
+    print("\n")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 if __name__ == "__main__":
-    a = input_validation("string", "Enter your first name:\n")
-    print(a)
     
-    b = input_validation("number", "Enter your balance:\n")
-    print(b)
+    # a = input_validation("string", "Enter your first name:\n")
+    # print(a)
+    
+    # b = input_validation("number", "Enter your balance:\n")
+    # print(b)
+    
+    
+    create_cardholder_save_db()
+    
+    
     
     # db = sqlite_db()
     
