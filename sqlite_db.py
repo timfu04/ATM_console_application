@@ -94,9 +94,6 @@ def input_validation(type: str, msg: str) -> Union[str, float, int]:
             clear_screen(1,0)
             
             
-
-    
-    
 # Function to insert cardholder into cardholders table            
 def insert_cardholder(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor, values: dict):
     """ Insert cardholder into cardholders table
@@ -113,12 +110,34 @@ def insert_cardholder(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor, va
     try:
         with db_conn:
             db_cursor.execute(query, values)
+        return True
+    except sqlite3.IntegrityError as e:
+        print(e)
+        return False
+    
+    
+# Function to delete cardholder by card number       
+def delete_cardholder_by_cardnum(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor, cardnum: int):
+    """ Delete cardholder by cardnum
+
+    Args:
+        db_conn (sqlite3.Connection): database connection
+        db_cursor (sqlite3.Cursor): database cursor
+        cardnum (int): card number to delete
+    """
+    query = f"""
+            DELETE FROM cardholders
+            WHERE cardNum = {cardnum}
+            """
+    try:
+        with db_conn:
+            db_cursor.execute(query)
     except Exception as e:
         print(e)
-    
- 
+
+
 # Function to create cardholder and insert into database
-def create_cardholder_insert_db(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor):
+def create_cardholder_insert_table(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor):
     """ Create cardholder and insert cardholders table
 
     Args:
@@ -129,11 +148,61 @@ def create_cardholder_insert_db(db_conn: sqlite3.Connection, db_cursor: sqlite3.
     lastName = input_validation("string", "Enter your last name:\n")
     balance = input_validation("number", "Enter your balance:\n")
     
-    cardholder = Cardholder(random_num_generator(16), random_num_generator(6), balance, firstName, lastName)
+    # cardholder = Cardholder(random_num_generator(16), random_num_generator(6), balance, firstName, lastName)
     
-    values = {"cardNum":cardholder.cardNum, "pin":cardholder.pin, "balance":cardholder.balance, "firstName":cardholder.firstName, "lastName":cardholder.lastName}
+    # testing
+    cardholder = Cardholder(6736150184784223, random_num_generator(6), balance, firstName, lastName)
     
-    insert_cardholder(db_conn, db_cursor, values)     
+    
+    # testing not confirmed
+    while not insert_cardholder(db_conn, db_cursor, {"cardNum":cardholder.cardNum, "pin":cardholder.pin, "balance":cardholder.balance, "firstName":cardholder.firstName, "lastName":cardholder.lastName}):
+        print(cardholder.cardNum)
+        cardholder.cardNum = random_num_generator(16)
+        print(cardholder.cardNum)
+        
+        print("hello world")
+        time.sleep(1)
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    # values = {"cardNum":cardholder.cardNum, "pin":cardholder.pin, "balance":cardholder.balance, "firstName":cardholder.firstName, "lastName":cardholder.lastName}
+    
+    # print({"cardNum":cardholder.cardNum, "pin":cardholder.pin, "balance":cardholder.balance, "firstName":cardholder.firstName, "lastName":cardholder.lastName})
+    
+    # cardholder.cardNum = 1231242
+    # print({"cardNum":cardholder.cardNum, "pin":cardholder.pin, "balance":cardholder.balance, "firstName":cardholder.firstName, "lastName":cardholder.lastName})
+    
+    
+    
+    
+    
+    
+    
+    
+    # while not insert_cardholder(db_conn, db_cursor, values):
+    #     print("hello")
+    #     time.sleep(1)
+    
+    
+    # while loop
+    # insert false - retry with new num
+    # insert true exit loop
+    
+    
+    
+    
+    # a = insert_cardholder(db_conn, db_cursor, values)     
+    # print(a)
     
     # TODO: 
     # 1. cardNum must be unique, check object against db data before insert
@@ -170,46 +239,32 @@ if __name__ == "__main__":
         print(e)
     
     
-    create_cardholder_insert_db(db.conn, db.cursor)
+    delete_cardholder_by_cardnum(db.conn, db.cursor, 3986569510732480)
+    
+    
+    # ad hoc SQL queries
+    # try:
+    #     with db.conn:
+    #         db.cursor.execute("""
+    #                           ALTER TABLE cardholders AUTO_INCREMENT = 4;
+    #                           """)
+    #     print(db.cursor.fetchall())
+    # except Exception as e:
+    #     print(e)
     
     
     
-
-        
-        
-        
-        
-        
-        
-    #### testing
-    # db.cursor.execute("""
-    #                   INSERT INTO cardholders (cardNum, pin, balance, firstName, lastName)
-    #                   VALUES (5462573831192908, 874269, 123456.78, 'Clement', 'Lee'); 
-    #                   """)
-    
-    # db.conn.commit()
     
     
-    # db.cursor.execute("SELECT * FROM cardholders")
     
-    # print(db.cursor.fetchall())
     
-
-    ### testing
-        
-        
+    
+    # create_cardholder_insert_table(db.conn, db.cursor)
+    
+    
+    db.close_conn()
 
 
-
-
-
-    
-    
-    # db.close_conn()
-
-
-    
-    
     
     
     
@@ -229,4 +284,7 @@ if __name__ == "__main__":
 # read table
 # update table
 # delete table 
+
+
+
 
