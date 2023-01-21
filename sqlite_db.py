@@ -23,7 +23,7 @@ class SQLite_DB:
         """ Close database connection
         """
         self.conn.close()
-
+        
         
 # Function to block all keyboard keys
 def block_all_keyboard_keys() -> None:
@@ -84,6 +84,11 @@ def input_validation(type: str, msg: str) -> Union[str, int, float]:
                         block_all_keyboard_keys()
                         clear_screen(1,0)
                         keyboard.unhook_all() # remove all keyboard hooks in use
+                elif type == "boolean":
+                    if user_input.lower() in ["yes", "y"]:
+                        return True
+                    else:
+                        return False
             else:
                 print(f"{STDOUT_PREFIX} Field cannot be blank {STDOUT_SUFFIX}")
                 block_all_keyboard_keys()
@@ -94,7 +99,7 @@ def input_validation(type: str, msg: str) -> Union[str, int, float]:
             block_all_keyboard_keys()
             clear_screen(1,0)
             keyboard.unhook_all() # remove all keyboard hooks in use
-
+            
 
 # Function to get all cardholders in DataFrame
 def get_all_cardholders(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor) -> pd.DataFrame:
@@ -141,17 +146,18 @@ def update_cardholder_info_by_cardnum(db_conn: sqlite3.Connection, db_cursor: sq
         new_value = f"'{new_value}'"
     elif col_to_update == "balance":
         new_value = input_validation("number", "Enter your new balance:\n")
-        
-    query = f"""
-            UPDATE cardholders
-            SET {col_to_update} = {new_value}
-            WHERE cardNum = {cardnum}  
-            """
-    try:
-        with db_conn:
-            db_cursor.execute(query)
-    except Exception as e:
-        print(e)
+    
+    if input_validation("boolean", "Do you wish to proceed data update? (Yes / No)\n"):
+        query = f"""
+                UPDATE cardholders
+                SET {col_to_update} = {new_value}
+                WHERE cardNum = {cardnum}  
+                """
+        try:
+            with db_conn:
+                db_cursor.execute(query)
+        except Exception as e:
+            print(e)
     
         
 # Function to delete cardholder by card number       
@@ -190,6 +196,7 @@ def insert_cardholder(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor, va
     try:
         with db_conn:
             db_cursor.execute(query, values)
+        print(f"{STDOUT_PREFIX} Data successfully inserted {STDOUT_SUFFIX}")
         return True
     except sqlite3.IntegrityError as e:
         print(e)
@@ -208,10 +215,11 @@ def create_cardholder_insert_table(db_conn: sqlite3.Connection, db_cursor: sqlit
     lastName = input_validation("string", "Enter your last name:\n")
     balance = input_validation("number", "Enter your balance:\n")
     
-    cardholder = Cardholder(random_num_generator(16), random_num_generator(6), balance, firstName, lastName)
-    
-    while not insert_cardholder(db_conn, db_cursor, {"cardNum":cardholder.cardNum, "pin":cardholder.pin, "balance":cardholder.balance, "firstName":cardholder.firstName, "lastName":cardholder.lastName}):
-        cardholder.cardNum = random_num_generator(16)
+    if input_validation("boolean", "Do you wish to proceed data insertion? (Yes / No)\n"):
+        cardholder = Cardholder(random_num_generator(16), random_num_generator(6), balance, firstName, lastName)
+        
+        while not insert_cardholder(db_conn, db_cursor, {"cardNum":cardholder.cardNum, "pin":cardholder.pin, "balance":cardholder.balance, "firstName":cardholder.firstName, "lastName":cardholder.lastName}):
+            cardholder.cardNum = random_num_generator(16)
         
 
 if __name__ == "__main__":
@@ -237,19 +245,19 @@ if __name__ == "__main__":
     # Call CRUD functions
     
     # 1. Create and insert cardholder
-    create_cardholder_insert_table(db.conn, db.cursor)
+    # create_cardholder_insert_table(db.conn, db.cursor)
     
     # 2. Get all cardholders
     df = get_all_cardholders(db.conn, db.cursor)
     print(df)
     
     # 3. Update cardholder information
-    update_cardholder_info_by_cardnum(db.conn, db.cursor, 673982851302457, "firstName")
-    update_cardholder_info_by_cardnum(db.conn, db.cursor, 673982851302457, "lastName")
-    update_cardholder_info_by_cardnum(db.conn, db.cursor, 673982851302457, "balance")
+    update_cardholder_info_by_cardnum(db.conn, db.cursor, 2071983763069452, "firstName")
+    update_cardholder_info_by_cardnum(db.conn, db.cursor, 2071983763069452, "lastName")
+    update_cardholder_info_by_cardnum(db.conn, db.cursor, 2071983763069452, "balance")
     
     # 4. Delete cardholder by card number
-    delete_cardholder_by_cardnum(db.conn, db.cursor, 9049721848530163)
+    delete_cardholder_by_cardnum(db.conn, db.cursor, 3195354272087146)
     
     db.close_conn()
 
