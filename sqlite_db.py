@@ -122,8 +122,39 @@ def get_all_cardholders(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor) 
         return df
     except Exception as e:
         print(e)
+
+
+# Function to update cardholder information by card number
+def update_cardholder_info_by_cardnum(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor, cardnum: int, col_to_update: str):
+    """ Update cardholder information by card number
+
+    Args:
+        db_conn (sqlite3.Connection): database connection
+        db_cursor (sqlite3.Cursor): database cursor
+        cardnum (int): card number to update
+        col_to_update (str): column to update
+    """
+    if col_to_update == "firstName":
+        new_value = input_validation("string", "Enter your new first name:\n")
+        new_value = f"'{new_value}'"
+    elif col_to_update == "lastName":
+        new_value = input_validation("string", "Enter your new last name:\n")
+        new_value = f"'{new_value}'"
+    elif col_to_update == "balance":
+        new_value = input_validation("number", "Enter your new balance:\n")
+        
+    query = f"""
+            UPDATE cardholders
+            SET {col_to_update} = {new_value}
+            WHERE cardNum = {cardnum}  
+            """
+    try:
+        with db_conn:
+            db_cursor.execute(query)
+    except Exception as e:
+        print(e)
     
-            
+        
 # Function to delete cardholder by card number       
 def delete_cardholder_by_cardnum(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor, cardnum: int):
     """ Delete cardholder by cardnum
@@ -205,22 +236,20 @@ if __name__ == "__main__":
         print(e)
     
 
-    
+    # Calling functions
+        
     # create_cardholder_insert_table(db.conn, db.cursor)
     
     # delete_cardholder_by_cardnum(db.conn, db.cursor, 1846794730265531)
     
-    df = get_all_cardholders(db.conn, db.cursor)
-    print(df)
+    # df = get_all_cardholders(db.conn, db.cursor)
+    # print(df)
+    
+    update_cardholder_info_by_cardnum(db.conn, db.cursor,8302643107729554, "balance")
+    update_cardholder_info_by_cardnum(db.conn, db.cursor,8302643107729554, "firstName")
+    update_cardholder_info_by_cardnum(db.conn, db.cursor,8302643107729554, "lastName")
   
 
     db.close_conn()
 
 
-
-# TODO: 
-# update first name
-# update last name
-# update balance
-
-    
