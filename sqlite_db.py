@@ -69,7 +69,7 @@ def input_validation(type: str, msg: str) -> Union[str, int, float]:
                         print(f"{STDOUT_PREFIX} Only alphabets are allowed {STDOUT_SUFFIX}")
                         block_all_keyboard_keys()
                         clear_screen(1,0)
-                        keyboard.unhook_all()
+                        keyboard.unhook_all() # remove all keyboard hooks in use
                 elif type == "number":
                     if user_input.isdigit(): # if user input is digit
                         return int(user_input)
@@ -83,18 +83,17 @@ def input_validation(type: str, msg: str) -> Union[str, int, float]:
                         print(f"{STDOUT_PREFIX} Only numbers are allowed {STDOUT_SUFFIX}")
                         block_all_keyboard_keys()
                         clear_screen(1,0)
-                        keyboard.unhook_all()
+                        keyboard.unhook_all() # remove all keyboard hooks in use
             else:
-                
                 print(f"{STDOUT_PREFIX} Field cannot be blank {STDOUT_SUFFIX}")
                 block_all_keyboard_keys()
                 clear_screen(1,0)
-                keyboard.unhook_all()
+                keyboard.unhook_all() # remove all keyboard hooks in use
         else:
             print(f"{STDOUT_PREFIX} Whitespace is not allowed {STDOUT_SUFFIX}")
             block_all_keyboard_keys()
             clear_screen(1,0)
-            keyboard.unhook_all()
+            keyboard.unhook_all() # remove all keyboard hooks in use
 
 
 # Function to get all cardholders in DataFrame
@@ -157,7 +156,7 @@ def update_cardholder_info_by_cardnum(db_conn: sqlite3.Connection, db_cursor: sq
         
 # Function to delete cardholder by card number       
 def delete_cardholder_by_cardnum(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor, cardnum: int):
-    """ Delete cardholder by cardnum
+    """ Delete cardholder by card number
 
     Args:
         db_conn (sqlite3.Connection): database connection
@@ -175,9 +174,9 @@ def delete_cardholder_by_cardnum(db_conn: sqlite3.Connection, db_cursor: sqlite3
         print(e)
 
             
-# Function to insert cardholder into cardholders table            
+# Function to insert cardholder into table            
 def insert_cardholder(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor, values: dict) -> Union[bool, bool]:
-    """ Insert cardholder into cardholders table
+    """ Insert cardholder into table
 
     Args:
         db_conn (sqlite3.Connection): database connection
@@ -235,21 +234,23 @@ if __name__ == "__main__":
     except Exception as e:
         print(e)
     
-
-    # Calling functions
-        
-    # create_cardholder_insert_table(db.conn, db.cursor)
+    # Call CRUD functions
     
-    # delete_cardholder_by_cardnum(db.conn, db.cursor, 1846794730265531)
+    # 1. Create and insert cardholder
+    create_cardholder_insert_table(db.conn, db.cursor)
     
-    # df = get_all_cardholders(db.conn, db.cursor)
-    # print(df)
+    # 2. Get all cardholders
+    df = get_all_cardholders(db.conn, db.cursor)
+    print(df)
     
-    update_cardholder_info_by_cardnum(db.conn, db.cursor,8302643107729554, "balance")
-    update_cardholder_info_by_cardnum(db.conn, db.cursor,8302643107729554, "firstName")
-    update_cardholder_info_by_cardnum(db.conn, db.cursor,8302643107729554, "lastName")
-  
-
+    # 3. Update cardholder information
+    update_cardholder_info_by_cardnum(db.conn, db.cursor, 673982851302457, "firstName")
+    update_cardholder_info_by_cardnum(db.conn, db.cursor, 673982851302457, "lastName")
+    update_cardholder_info_by_cardnum(db.conn, db.cursor, 673982851302457, "balance")
+    
+    # 4. Delete cardholder by card number
+    delete_cardholder_by_cardnum(db.conn, db.cursor, 9049721848530163)
+    
     db.close_conn()
 
 
