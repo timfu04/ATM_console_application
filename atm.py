@@ -1,7 +1,31 @@
+# Import modules
+import os
+import time
 import sqlite3
-from sqlite_db import SQLite_DB, input_validation, get_cardholder_by_cardnum_pin, update_cardholder_info_by_cardnum, error_msg
-    
-def print_menu(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor):
+from sqlite_db import SQLite_DB, input_validation, get_cardholder_by_cardnum_pin, update_cardholder_info_by_cardnum, format_msg, block_unblock_all_keyboard_keys
+
+
+# Function to clear screen in between sleeps
+def clear_screen(before_sec: int, after_sec: int):
+    """ Clear screen in between sleeps
+
+    Args:
+        before_sec (int): number of seconds to sleep before clear screen
+        after_sec (int): number of seconds to sleep after clear screen
+    """
+    time.sleep(before_sec)
+    os.system("cls")
+    time.sleep(after_sec)
+
+
+# Function to print main menu
+def print_menu(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor) -> None:
+    """ Print main menu
+
+    Args:
+        db_conn (sqlite3.Connection): database connection
+        db_cursor (sqlite3.Cursor): database cursor
+    """ 
     
     print(f"""{'#'*5} Huat Bank ATM {'#'*5}
     1. Withdraw
@@ -11,105 +35,126 @@ def print_menu(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor):
 {'#'*25}\n""")
     
     while True:
-        option = input_validation("number", "Please enter your option:\n")
+        option = input_validation(type="number", skip_input=False, msg="Enter your option:\n")
         if isinstance(option, int):
             if option in [1, 2, 3, 4]:
                 break
             else:
-                error_msg("Invalid option. Please try again")
+                print(format_msg("Invalid option. Please try again."))
+                block_unblock_all_keyboard_keys(1)
         else:
-            error_msg("Invalid option. Option cannot be decimal. Please try again.")
-    
+            print(format_msg("Invalid option. Option cannot be decimal. Please try again."))
+            block_unblock_all_keyboard_keys(1)
+
     if option == 1:
-        withdraw(db.conn, db.cursor)
+        withdraw(db_conn, db_cursor)
     elif option == 2:
         pass
     elif option == 3:
-        pass
+        check_balance(db_conn, db_cursor)
     else:
         exit()
-        
-        
-def withdraw(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor):
-    
+
+
+# Function to get user card credentials input (card number & PIN)
+def get_card_credentials(type: str, msg: str, max_length: int) -> int:
+    """ Get user card credentials input (card number & PIN)
+
+    Args:
+        type (str): "card" or "pin"
+        msg (str): prompt message
+        max_length (int): maximum credential length
+
+    Returns:
+        int: credential (card number or PIN)
+    """
+    if type == "card":
+        msg_type = "Card number"
+    elif type == "pin":
+        msg_type = "PIN"
+
     while True:
-        while True:
-            cardNum = input_validation("number", "Enter your card number:\n")
-            if isinstance(cardNum, int):
-                if len(str(cardNum)) == 16:
-                    break
-                else:
-                    error_msg("Card number must contain 16 digits")
+        credential = input_validation(type="number", skip_input=False, msg=f"{msg}")
+        if isinstance(credential, int):
+            if len(str(credential)) == max_length:
+                break
             else:
-                error_msg("Invalid option. Card number cannot be decimal")
-            
-        while True:
-            pin = input_validation("number", "Enter your PIN:\n")
-            if isinstance(pin, int):
-                if len(str(pin)) == 6:
-                    break
-                else:
-                    error_msg("PIN must contain 6 digits")
-            else:
-                error_msg("Invalid option. PIN cannot be decimal")
+                print(format_msg(f"{msg_type} must contain {max_length} digits"))
+                block_unblock_all_keyboard_keys(1)
+        else:
+            print(format_msg(f"Invalid option. {msg_type} cannot be decimal."))
+            block_unblock_all_keyboard_keys(1)
     
+    return credential
+
+
+# Function for ATM withdrawal       
+def withdraw(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor) -> None:
+    """ ATM withdrawal
+
+    Args:
+        db_conn (sqlite3.Connection): database connection
+        db_cursor (sqlite3.Cursor): database cursor
+    """
+    while True:
+        cardNum = get_card_credentials("card", "\nEnter your card number:\n", 16)
+        pin = get_card_credentials("pin", "\nEnter your PIN:\n", 6)
+        
         cardholder = get_cardholder_by_cardnum_pin(db_conn, db_cursor, cardNum, pin)
         if cardholder != None:
             current_balance = cardholder[3]
             break
         else:
-            error_msg("Information not found. Please check your card number & PIN")
+            print(format_msg("Information not found. Please check your card number & PIN"))
     
-    print(current_balance)
+    print(f'\n{format_msg(f"Your current balance is: {current_balance}")}')
     
     while True:
-        withdrawal_amount = input_validation("number", "Enter your withdrawal amount:\n")
-        if current_balance - withdrawal_amount < 0:
-            error_msg("Withdrawal amount exceeded account balance. Please enter a lower amount.")
+        withdraw_amount = input_validation(type="number", skip_input=False, msg="Enter your withdrawal amount:\n")
+        if current_balance - withdraw_amount < 0:
+            print(format_msg("Withdrawal amount exceeded account balance. Please enter a lower amount."))
         else:
-            new_balance = current_balance - withdrawal_amount
+            new_balance = current_balance - withdraw_amount
             break
     
-    print(new_balance)
-    # still testing
-    # update_cardholder_info_by_cardnum(db.conn, db.cursor, cardNum, "balance")
+    if update_cardholder_info_by_cardnum(db_conn, db_cursor, cardNum, "balance", input_validation(type="number", skip_input=True, user_input=str(new_balance))):
+        print(f'\n{format_msg("Transaction completed. Please take your cash.")}')
+    
+    clear_screen(10, 0)
+    print_menu(db.conn, db.cursor)
+
+
+# Function to check current balance
+def check_balance(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor) -> None:
+    """ Check current balance
+
+    Args:
+        db_conn (sqlite3.Connection): database connection
+        db_cursor (sqlite3.Cursor): database cursor
+    """
+    while True:
+        cardNum = get_card_credentials("card", "\nEnter your card number:\n", 16)
+        pin = get_card_credentials("pin", "\nEnter your PIN:\n", 6)
+        
+        cardholder = get_cardholder_by_cardnum_pin(db_conn, db_cursor, cardNum, pin)
+        
+        if cardholder != None:
+            current_balance = cardholder[3]
+            break
+        else:
+            print(format_msg("Information not found. Please check your card number & PIN"))
             
- 
+    print(f'\n{format_msg(f"Your current balance is: {current_balance}")}')
 
+    clear_screen(10, 0)
+    print_menu(db.conn, db.cursor)
     
     
-    
-    #if not None: get current balance
-    # ask how much to withdraw
-    # get new balance
-    # update new balance
-    
-
-
-
-
-# print menu, fast cash or targeted amount
-# if fast cash, update database
-# if targeted, get input, update database
-
-    
-    
-
-
-
-
-
-# enter cardnum
-# choose fast cash or targeted number
-# minus balance
-
-
-
-
-
-
 if __name__ == "__main__":
-    
+      
     db = SQLite_DB()
     
     print_menu(db.conn, db.cursor)
+    
+    
+    

@@ -24,14 +24,14 @@ class SQLite_DB:
         self.conn.close()
 
 
-# Function to print formatted message
-def print_formatted_msg(msg: str) -> None:
-    """ Print formatted message
+# Function to format message
+def format_msg(msg: str) -> None:
+    """ Format message
 
     Args:
         msg (str): original message
     """
-    print(f"{STDOUT_PREFIX} {msg} {STDOUT_SUFFIX}\n\n")
+    return f"{STDOUT_PREFIX} {msg} {STDOUT_SUFFIX}\n"
     
         
 # Function to block and unblock all keyboard keys
@@ -69,7 +69,7 @@ def input_validation(type: str, skip_input: bool, msg: str = "", user_input: str
                     if user_input.isalpha(): # if user input are all alphabet letters
                         return str(user_input.title())
                     else:
-                        print_formatted_msg("Only alphabets are allowed")
+                        print(format_msg("Only alphabets are allowed"))
                         block_unblock_all_keyboard_keys(1)
                 elif type == "number":
                     if user_input.isdigit(): # if user input is digit
@@ -81,7 +81,7 @@ def input_validation(type: str, skip_input: bool, msg: str = "", user_input: str
                         except Exception as e:
                             print(e)
                     else:
-                        print_formatted_msg("Only numbers are allowed")    
+                        print(format_msg("Only numbers are allowed"))    
                         block_unblock_all_keyboard_keys(1)
                 elif type == "boolean":
                     if user_input.lower() in ["yes", "y"]:
@@ -89,10 +89,10 @@ def input_validation(type: str, skip_input: bool, msg: str = "", user_input: str
                     else:
                         return False
             else:
-                print_formatted_msg("Field cannot be blank")
+                print(format_msg("Field cannot be blank"))
                 block_unblock_all_keyboard_keys(1)
         else:
-            print_formatted_msg("Whitespace is not allowed")
+            print(format_msg("Whitespace is not allowed"))
             block_unblock_all_keyboard_keys(1)
 
 
@@ -154,7 +154,7 @@ def get_all_cardholders(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor) 
 
 
 # Function to update cardholder information by card number
-def update_cardholder_info_by_cardnum(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor, cardnum: int, col_to_update: str, new_value_func: Callable[[sqlite3.Connection, sqlite3.Cursor, int, int], Union[str, int, float, bool]]) -> None:
+def update_cardholder_info_by_cardnum(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor, cardnum: int, col_to_update: str, new_value_func: Callable[[sqlite3.Connection, sqlite3.Cursor, int, int], Union[str, int, float, bool]]) -> Union[bool, bool]:
     """ Update cardholder information by card number
 
     Args:
@@ -163,11 +163,14 @@ def update_cardholder_info_by_cardnum(db_conn: sqlite3.Connection, db_cursor: sq
         cardnum (int): card number to update
         col_to_update (str): column to update
         new_value_func (Callable[[sqlite3.Connection, sqlite3.Cursor, int, int], Union[str, int, float, bool]]): return value from input validation function
+        
+    Returns:
+    Union[bool, bool]: True (update successfully) or False (failed to update)
     """
     if col_to_update != "balance":
         new_value_func = f"'{new_value_func}'"
        
-    if input_validation(type="boolean", skip_input=False, msg="Do you wish to proceed data update? (Yes / No)\n"):
+    if input_validation(type="boolean", skip_input=False, msg="\nDo you wish to proceed? (Yes / No)\n"):
         query = f"""
                 UPDATE cardholders
                 SET {col_to_update} = {new_value_func}
@@ -176,9 +179,11 @@ def update_cardholder_info_by_cardnum(db_conn: sqlite3.Connection, db_cursor: sq
         try:
             with db_conn:
                 db_cursor.execute(query)
+            return True
         except Exception as e:
             print(e)
-
+    else:
+        return False
         
 # Function to delete cardholder by card number       
 def delete_cardholder_by_cardnum(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor, cardnum: int):
@@ -208,6 +213,9 @@ def insert_cardholder(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor, va
         db_conn (sqlite3.Connection): database connection
         db_cursor (sqlite3.Cursor): database cursor
         values (dict): values to be inserted into cardholders table
+    
+    Returns:
+    Union[bool, bool]: True (insert successfully) or False (failed to insert)
     """
     query = """
         INSERT INTO cardholders (cardNum, pin, balance, firstName, lastName)
@@ -216,7 +224,7 @@ def insert_cardholder(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor, va
     try:
         with db_conn:
             db_cursor.execute(query, values)
-        print_formatted_msg("Data successfully inserted")
+        print(format_msg("Data successfully inserted"))
         return True
     except sqlite3.IntegrityError as e:
         print(e)
@@ -235,7 +243,7 @@ def create_cardholder_insert_table(db_conn: sqlite3.Connection, db_cursor: sqlit
     lastName = input_validation(type="string", skip_input=False, msg="Enter your last name:\n")
     balance = input_validation(type="number", skip_input=False, msg="Enter your balance:\n")
     
-    if input_validation(type="boolean", skip_input=False, msg="Do you wish to proceed data insertion? (Yes / No)\n"):
+    if input_validation(type="boolean", skip_input=False, msg="Do you wish to proceed? (Yes / No)\n"):
         cardholder = Cardholder(random_num_generator(16), random_num_generator(6), balance, firstName, lastName)
         
         # Generate new card number if function return False
