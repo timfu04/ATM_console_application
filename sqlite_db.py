@@ -1,9 +1,9 @@
 # Import modules
 import time
-import pandas as pd
 import sqlite3
 import keyboard
-from typing import Union
+import pandas as pd
+from typing import Union, Callable
 from cardholder import Cardholder, random_num_generator
 
 
@@ -24,39 +24,44 @@ class SQLite_DB:
         self.conn.close()
 
 
-# Function to print error message
-def error_msg(msg: str):
-    """ Print error message
+# Function to print formatted message
+def print_formatted_msg(msg: str) -> None:
+    """ Print formatted message
 
     Args:
-        msg (str): error message
+        msg (str): original message
     """
     print(f"{STDOUT_PREFIX} {msg} {STDOUT_SUFFIX}\n\n")
     
         
-# Function to block all keyboard keys
-def block_all_keyboard_keys() -> None:
-    """ Block all keyboard keys
+# Function to block and unblock all keyboard keys
+def block_unblock_all_keyboard_keys(seconds: int) -> None:
+    """ Block and unblock all keyboard keys
+
+    Args:
+        seconds (int): number of seconds to sleep
     """
     for i in range(150):
         keyboard.block_key(i)
+    time.sleep(seconds)
+    keyboard.unhook_all() # remove all keyboard hooks in use
     
-        
+       
 # Function to validate user input
-def input_validation(type: str, skip_input: bool, msg: str = "", user_input: str = "") -> Union[str, int, float]:
+def input_validation(type: str, skip_input: bool, msg: str = "", user_input: str = "") -> Union[str, int, float, bool]:
     """ Validate user input
 
     Args:
-        type (str): string or number
-        skip_input (bool): whether to skip user input
-        msg (str, optional): user input message. Defaults to "".
+        type (str): "string" or "number"
+        skip_input (bool): True(skip user input) or False (don't skip user input)
+        msg (str, optional): prompt message. Defaults to "".
         user_input (str, optional): user input. Defaults to "".
 
     Returns:
-        Union[str, int, float]: return user input in string or integer or float
+        Union[str, int, float, bool]: return result in string/ integer/ float/ boolean 
     """
     while True:
-        if not skip_input:
+        if not skip_input: # if skip_input False
             user_input = input(msg)
         if not ' ' in user_input: # if user input don't have whitespace
             if len(user_input) > 0: # if user input not empty/blank
@@ -64,10 +69,8 @@ def input_validation(type: str, skip_input: bool, msg: str = "", user_input: str
                     if user_input.isalpha(): # if user input are all alphabet letters
                         return str(user_input.title())
                     else:
-                        error_msg("Only alphabets are allowed")
-                        block_all_keyboard_keys()
-                        time.sleep(1)
-                        keyboard.unhook_all() # remove all keyboard hooks in use
+                        print_formatted_msg("Only alphabets are allowed")
+                        block_unblock_all_keyboard_keys(1)
                 elif type == "number":
                     if user_input.isdigit(): # if user input is digit
                         return int(user_input)
@@ -78,25 +81,19 @@ def input_validation(type: str, skip_input: bool, msg: str = "", user_input: str
                         except Exception as e:
                             print(e)
                     else:
-                        error_msg("Only numbers are allowed")    
-                        block_all_keyboard_keys()
-                        time.sleep(1)
-                        keyboard.unhook_all() # remove all keyboard hooks in use
+                        print_formatted_msg("Only numbers are allowed")    
+                        block_unblock_all_keyboard_keys(1)
                 elif type == "boolean":
                     if user_input.lower() in ["yes", "y"]:
                         return True
                     else:
                         return False
             else:
-                error_msg("Field cannot be blank")
-                block_all_keyboard_keys()
-                time.sleep(1)
-                keyboard.unhook_all() # remove all keyboard hooks in use
+                print_formatted_msg("Field cannot be blank")
+                block_unblock_all_keyboard_keys(1)
         else:
-            error_msg("Whitespace is not allowed")
-            block_all_keyboard_keys()
-            time.sleep(1)
-            keyboard.unhook_all() # remove all keyboard hooks in use
+            print_formatted_msg("Whitespace is not allowed")
+            block_unblock_all_keyboard_keys(1)
 
 
 # Function to get cardholder by card number and PIN
@@ -147,7 +144,6 @@ def get_all_cardholders(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor) 
     try:
         with db_conn:
             db_cursor.execute(query)
-        
         data = db_cursor.fetchall()
         columns = ["id", "cardNum", "pin", "balance", "firstName", "lastName"]
         
@@ -158,7 +154,7 @@ def get_all_cardholders(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor) 
 
 
 # Function to update cardholder information by card number
-def update_cardholder_info_by_cardnum(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor, cardnum: int, col_to_update: str, new_value: Union[str, int]):
+def update_cardholder_info_by_cardnum(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor, cardnum: int, col_to_update: str, new_value_func: Callable[[sqlite3.Connection, sqlite3.Cursor, int, int], Union[str, int, float, bool]]) -> None:
     """ Update cardholder information by card number
 
     Args:
@@ -166,15 +162,15 @@ def update_cardholder_info_by_cardnum(db_conn: sqlite3.Connection, db_cursor: sq
         db_cursor (sqlite3.Cursor): database cursor
         cardnum (int): card number to update
         col_to_update (str): column to update
-        new_value (Union[str, int]): new value to update (string or integer)
+        new_value_func (Callable[[sqlite3.Connection, sqlite3.Cursor, int, int], Union[str, int, float, bool]]): return value from input validation function
     """
-    if not col_to_update == "balance":
-        new_value = f"'{new_value}'"
-    
-    if input_validation("boolean", False, "Do you wish to proceed data update? (Yes / No)\n"):
+    if col_to_update != "balance":
+        new_value_func = f"'{new_value_func}'"
+       
+    if input_validation(type="boolean", skip_input=False, msg="Do you wish to proceed data update? (Yes / No)\n"):
         query = f"""
                 UPDATE cardholders
-                SET {col_to_update} = {new_value}
+                SET {col_to_update} = {new_value_func}
                 WHERE cardNum = {cardnum}  
                 """
         try:
@@ -182,7 +178,7 @@ def update_cardholder_info_by_cardnum(db_conn: sqlite3.Connection, db_cursor: sq
                 db_cursor.execute(query)
         except Exception as e:
             print(e)
-    
+
         
 # Function to delete cardholder by card number       
 def delete_cardholder_by_cardnum(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor, cardnum: int):
@@ -220,7 +216,7 @@ def insert_cardholder(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor, va
     try:
         with db_conn:
             db_cursor.execute(query, values)
-        error_msg("Data successfully inserted")
+        print_formatted_msg("Data successfully inserted")
         return True
     except sqlite3.IntegrityError as e:
         print(e)
@@ -235,13 +231,14 @@ def create_cardholder_insert_table(db_conn: sqlite3.Connection, db_cursor: sqlit
         db_conn (sqlite3.Connection): database connection
         db_cursor (sqlite3.Cursor): database cursor
     """
-    firstName = input_validation("string", False, "Enter your first name:\n")
-    lastName = input_validation("string", False, "Enter your last name:\n")
-    balance = input_validation("number", False, "Enter your balance:\n")
+    firstName = input_validation(type="string", skip_input=False, msg="Enter your first name:\n")
+    lastName = input_validation(type="string", skip_input=False, msg="Enter your last name:\n")
+    balance = input_validation(type="number", skip_input=False, msg="Enter your balance:\n")
     
-    if input_validation("boolean", False, "Do you wish to proceed data insertion? (Yes / No)\n"):
+    if input_validation(type="boolean", skip_input=False, msg="Do you wish to proceed data insertion? (Yes / No)\n"):
         cardholder = Cardholder(random_num_generator(16), random_num_generator(6), balance, firstName, lastName)
         
+        # Generate new card number if function return False
         while not insert_cardholder(db_conn, db_cursor, {"cardNum":cardholder.cardNum, "pin":cardholder.pin, "balance":cardholder.balance, "firstName":cardholder.firstName, "lastName":cardholder.lastName}):
             cardholder.cardNum = random_num_generator(16)
         
@@ -269,28 +266,24 @@ if __name__ == "__main__":
     # Call CRUD functions
     
     # 1. Create and insert cardholder
-    # create_cardholder_insert_table(db.conn, db.cursor)
+    create_cardholder_insert_table(db.conn, db.cursor)
     
-    # # 2. Get all cardholders
-    # df = get_all_cardholders(db.conn, db.cursor)
-    # print(df)
+    # 2. Get all cardholders
+    df = get_all_cardholders(db.conn, db.cursor)
+    print(df)
     
-    # # 3. Get current balance by card number
-    # print(get_cardholder_by_cardnum_pin(db.conn, db.cursor, 9700924436352881, 289163))
+    # 3. Get current balance by card number
+    print(get_cardholder_by_cardnum_pin(db.conn, db.cursor, 9700924436352881, 289163))
     
     # 4. Update cardholder information
-    update_cardholder_info_by_cardnum(db.conn, db.cursor, 2071983763069452, "firstName", input_validation(type="string", skip_input=True, user_input="walaoehF"))
-    update_cardholder_info_by_cardnum(db.conn, db.cursor, 2071983763069452, "lastName", input_validation(type="string", skip_input=True, user_input="walaoehL"))
-    update_cardholder_info_by_cardnum(db.conn, db.cursor, 2071983763069452, "balance", input_validation(type="number", skip_input=True, user_input="1000"))
+    update_cardholder_info_by_cardnum(db.conn, db.cursor, 949271386305874, "firstName", input_validation(type="string", skip_input=True, user_input="eheng"))
     
+    update_cardholder_info_by_cardnum(db.conn, db.cursor, 949271386305874, "lastName", input_validation(type="string", skip_input=True, user_input="ehuat"))
     
+    update_cardholder_info_by_cardnum(db.conn, db.cursor, 949271386305874, "balance", input_validation(type="number", skip_input=True, user_input="6688888"))
     
-    
-    # update_cardholder_info_by_cardnum(db.conn, db.cursor, 2071983763069452, "lastName", "testingL")
-    # update_cardholder_info_by_cardnum(db.conn, db.cursor, 2071983763069452, "balance", 12345678)
-    
-    # # 5. Delete cardholder by card number
-    # delete_cardholder_by_cardnum(db.conn, db.cursor, 764415931362058)
+    # 5. Delete cardholder by card number
+    delete_cardholder_by_cardnum(db.conn, db.cursor, 4603129468027397)
     
     db.close_conn()
 
