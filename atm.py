@@ -49,7 +49,7 @@ def print_menu(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor) -> None:
     if option == 1:
         withdraw(db_conn, db_cursor)
     elif option == 2:
-        pass
+        deposit(db_conn, db_cursor)
     elif option == 3:
         check_balance(db_conn, db_cursor)
     else:
@@ -120,7 +120,39 @@ def withdraw(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor) -> None:
     if update_cardholder_info_by_cardnum(db_conn, db_cursor, cardNum, "balance", input_validation(type="number", skip_input=True, user_input=str(new_balance))):
         print(f'\n{format_msg("Transaction completed. Please take your cash.")}')
     
-    clear_screen(10, 0)
+    clear_screen(5, 0)
+    print_menu(db.conn, db.cursor)
+
+
+# Function for ATM deposit
+def deposit(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor) -> None:
+    """ ATM deposit
+
+    Args:
+        db_conn (sqlite3.Connection): database connection
+        db_cursor (sqlite3.Cursor): database cursor
+    """
+    while True:
+        cardNum = get_card_credentials("card", "\nEnter your card number:\n", 16)
+        pin = get_card_credentials("pin", "\nEnter your PIN:\n", 6)
+        
+        cardholder = get_cardholder_by_cardnum_pin(db_conn, db_cursor, cardNum, pin)
+        if cardholder != None:
+            current_balance = cardholder[3]
+            break
+        else:
+            print(format_msg("Information not found. Please check your card number & PIN"))
+        
+    print(f'\n{format_msg(f"Your current balance is: {current_balance}")}')
+    
+    deposit_amount = input_validation(type="number", skip_input=False, msg="Enter your deposit amount:\n")
+    new_balance = current_balance + deposit_amount
+    
+    if update_cardholder_info_by_cardnum(db_conn, db_cursor, cardNum, "balance", input_validation(type="number", skip_input=True, user_input=str(new_balance))):
+        print(f'\n{format_msg("Transaction completed. Cash has been deposited.")}')
+        print(f'\n{format_msg(f"Your new current balance is: {new_balance}")}')
+
+    clear_screen(5, 0)
     print_menu(db.conn, db.cursor)
 
 
@@ -146,7 +178,7 @@ def check_balance(db_conn: sqlite3.Connection, db_cursor: sqlite3.Cursor) -> Non
             
     print(f'\n{format_msg(f"Your current balance is: {current_balance}")}')
 
-    clear_screen(10, 0)
+    clear_screen(5, 0)
     print_menu(db.conn, db.cursor)
     
     
