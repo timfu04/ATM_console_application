@@ -1,6 +1,10 @@
 # __ATM Console Application__
 A Python console application that simulates functions of an Automated Teller Machine (ATM). These functions include withdrawal, deposit and check balance.
 
+## __Screenshot of Main Menu__
+
+![main_menu](https://user-images.githubusercontent.com/70854339/214623716-1016969b-04dc-4eb5-96d8-3c72784a73d3.png)
+
 # __Installation and Usage__
 1. Create Virtual Environment in Python
    
